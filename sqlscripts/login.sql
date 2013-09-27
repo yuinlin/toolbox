@@ -2,6 +2,7 @@ REM dont printout anything when logging in
 set termout off
 
 REM barbaz foo
+REM foobar baz
 
 REM set textpad as sql*Plus default editor
 define _editor=vi
