@@ -1,0 +1,5 @@
+-- display info about automatic stats gathering job in 10g
+SELECT JOB_NAME, SCHEDULE_NAME, SCHEDULE_TYPE, ENABLED
+  FROM DBA_SCHEDULER_JOBS
+ WHERE PROGRAM_NAME = 'GATHER_STATS_PROG';
+
