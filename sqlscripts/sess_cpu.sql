@@ -6,6 +6,7 @@ col program form a18
 col logon_time form a20
 col wait_time form 99999999
 col cpu_stat form a20
+col value form 99999999
 
 select s.username
        ,s.osuser

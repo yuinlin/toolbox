@@ -1,7 +1,7 @@
 accept tab prompt 'view fk constraints pointing to parent table: '
 
-col owner form a12
-col r_owner form a12
+col owner form a20
+col r_owner form a20
 col table_name form a30
 col constraint_name form a30
 col r_constraint_name form a30

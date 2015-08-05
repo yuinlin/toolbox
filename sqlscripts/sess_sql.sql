@@ -12,6 +12,9 @@
 set pages 52
 set lines 140
 set verify off
+
+accept USERNAME prompt'enter specific username, can include wildcard (default all): '
+
 select 'Sessions connected to ' || upper(value)
     || ' on ' || to_char(SYSDATE, 'MM/DD/YY HH24:MI:SS')
        message
@@ -34,6 +37,8 @@ select s.sid, p.spid, s.serial#, s.process, s.username, s.machine, s.status,
  where s.paddr = p.addr(+)
    and s.taddr = t.addr(+)
    and t.xidusn = r.segment_id(+)
+   and ('&USERNAME' is null or
+        s.username like UPPER('&USERNAME'))
  order by logon_time;
 
 ACCEPT sid NUMBER PROMPT 'Which SID to examine? '

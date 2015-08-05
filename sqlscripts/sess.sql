@@ -27,6 +27,7 @@ set feedback on
 column inst_id format 9
 column sid format 99999
 column serial# format 99999
+column spid format a6
 column ospid format a6
 column username format a20
 column machine format a26
@@ -38,7 +39,8 @@ column operation format a30
 select s.inst_id
        ,s.sid
        ,s.serial#
-       ,p.spid as ospid
+       ,p.spid
+       ,s.process as ospid
        ,s.username || case when s.sid = &currsid and s.inst_id = &currinst then ' *me*' end as username
        ,s.machine
        ,s.status
