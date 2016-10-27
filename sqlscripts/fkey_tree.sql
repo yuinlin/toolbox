@@ -9,7 +9,7 @@ col r_constraint_name form a30
 col delete_rule form a12
 col clevel form 999
 
-with 
+with
   children (owner,constraint_name,table_name,table_pk,r_owner,r_constraint_name,delete_rule,clevel)  as
   (
     select fk.owner
@@ -28,7 +28,7 @@ with
             )
      where fk.constraint_type='R'
        and fk.r_constraint_name in (select constraint_name
-                                      from all_constraints 
+                                      from all_constraints
                                      where constraint_type in ('P','U') and table_name=upper('&tab'))
      union all
     select fk.owner
@@ -50,6 +50,7 @@ with
             pk.constraint_type in ('P','U')
             )
   )
-  cycle table_name set is_cycle to '1' default '0' 
-select * 
+  cycle table_name set is_cycle to '1' default '0'
+select *
   from children;
+

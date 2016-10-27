@@ -1,4 +1,7 @@
+col username form a30
+
 select s.sid
+       ,s.username
        ,t.used_ublk
        ,t.used_urec
        ,t.log_io

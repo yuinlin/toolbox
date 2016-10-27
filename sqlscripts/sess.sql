@@ -6,6 +6,7 @@ set lines 300
 set verify off
 
 accept USERNAME prompt'enter specific username, can include wildcard (default all): '
+accept MACHINENAME prompt'enter specific machine, can include wildcard (default all): '
 
 set termout off
 column currsid new_value currsid
@@ -55,5 +56,7 @@ select s.inst_id
    and t.xidusn = r.segment_id(+)
    and ('&USERNAME' is null or
         s.username like UPPER('&USERNAME'))
+   and ('&MACHINENAME' is null or
+        s.machine like UPPER('&MACHINENAME'))
  order by s.inst_id, s.logon_time, s.sid;
 
