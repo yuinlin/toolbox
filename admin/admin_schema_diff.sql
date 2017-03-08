@@ -311,7 +311,7 @@ as
                 from dba_tables
                where owner=v_schema
                  and table_name = v_table_name
-                 and iot_type is null
+                 and tablespace_name is not null
                minus
               select segment_name
                 from dba_segments
