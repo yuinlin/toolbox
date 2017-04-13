@@ -15,6 +15,7 @@ define SCHEMANAME=admin
    grant select on gv_$session to &SCHEMANAME;
    grant select on dba_users to &SCHEMANAME;
    grant select on dba_tablespaces to &SCHEMANAME;
+   grant select on dba_ts_quotas to &SCHEMANAME;
    grant select on dba_segments to &SCHEMANAME;
    grant select on dba_tables to admin;
    grant select on dba_tab_columns to admin;

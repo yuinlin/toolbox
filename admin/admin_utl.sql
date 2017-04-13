@@ -21,7 +21,7 @@ as
   
   procedure create_default_tablespace
     (i_debug_mode in boolean default false);
-  
+
   procedure drop_archived_tablespace
     (i_months_prior in number default 2
      ,i_debug_mode in boolean default false);
@@ -67,6 +67,30 @@ as
   begin
     do_ddl('alter database default tablespace '||i_tablespace_name);
   end set_default_tablespace; 
+
+  procedure set_existing_user_tablespace
+  is
+  begin
+    -- if a user inherited their default tablespace from db default tablespace value
+    -- but they have quota granted on a different tablespace, change their default 
+    -- tablespace to match the quota'ed one
+    for i in (
+              select u.username
+                     ,q.tablespace_name as quota_granted_tablespace
+                from dba_users u
+                left outer join dba_ts_quotas q
+                  on (q.username = u.username)
+               where u.oracle_maintained = 'N'
+                 and q.dropped = 'NO'
+                 and u.default_tablespace = (select property_value 
+                                               from database_properties 
+                                              where property_name='DEFAULT_PERMANENT_TABLESPACE')
+                 and u.default_tablespace <> q.tablespace_name
+             ) 
+    loop
+      do_ddl('alter user '||i.username||' default tablespace '||i.quota_granted_tablespace);
+    end loop;
+  end set_existing_user_tablespace;
  
   procedure drop_tablespace
     (i_tablespace_name in non_null_objectname)
@@ -194,6 +218,7 @@ as
     end if;
     
     set_default_tablespace(v_curr_tablespace);
+    set_existing_user_tablespace;
   end create_default_tablespace;
   
   procedure drop_archived_tablespace
@@ -259,14 +284,27 @@ end;
 
 
 /*
+
+-- manual ts rotation:
+-- as sys
+set serveroutput on size 1000000
+exec admin.admin_utl.create_default_tablespace(i_debug_mode => true);
+exec admin.admin_utl.create_default_tablespace(i_debug_mode => false);
+  
+exec admin.admin_utl.drop_archived_tablespace(i_months_prior => 2, i_debug_mode => true);
+exec admin.admin_utl.drop_archived_tablespace(i_months_prior => 2, i_debug_mode => false);
+
+
+
+-- have not implemented below
 BEGIN
   DBMS_SCHEDULER.CREATE_JOB (
-   job_name           =>  'update_sales',
+   job_name           =>  '',
    job_type           =>  'STORED_PROCEDURE',
-   job_action         =>  'admin_utl..SALES_PKG.UPDATE_SALES_SUMMARY',
-   start_date         =>  '28-APR-08 07.00.00 PM Australia/Sydney',
-   repeat_interval    =>  'FREQ=DAILY;INTERVAL=1'
-   comments           =>  'My new job');
+   job_action         =>  'admin_utl.',
+   start_date         =>  ,
+   repeat_interval    =>  'FREQ=MONTHLY;INTERVAL=1'
+   comments           =>  '');
 END;
 /
 */
