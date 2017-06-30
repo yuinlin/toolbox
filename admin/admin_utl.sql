@@ -180,6 +180,7 @@ as
        and property_value = v_curr_tablespace;    
     
     if (v_tablespace_is_default = 1) then
+      dbms_output.put_line('tablespace '||v_curr_tablespace||' is already the default tablespace');
       return;
     end if;
     
@@ -200,7 +201,8 @@ as
     (i_months_prior in number default 2
      ,i_debug_mode in boolean default false)
   is  
-    v_yearmonth pls_integer;    
+    v_found_ts_to_drop boolean := false;
+    v_yearmonth pls_integer;
   begin       
     g_debug_mode := i_debug_mode;
     
@@ -216,6 +218,7 @@ as
                order by tablespace_name
              )
     loop
+      v_found_ts_to_drop := true;
       begin
         dbms_output.put_line('for tablespace '||i.tablespace_name);
         lock_and_drop_users(i.tablespace_name);
@@ -227,6 +230,10 @@ as
         dbms_output.put_line('tablespace '||i.tablespace_name||' contains oracle owned schema; cannot be dropped');
       end;
     end loop;
+
+    if not (v_found_ts_to_drop) then
+      dbms_output.put_line('no tablespace at or earlier than '||v_yearmonth||' was found to drop');
+    end if;
   end drop_archived_tablespace;    
   
   procedure force_drop_user
@@ -253,7 +260,8 @@ as
     
     drop_user(i_user_name, true);
   exception 
-    when user_not_exist then null;
+    when user_not_exist then 
+      dbms_output.put_line('user '||i_user_name||' does not exist');
   end force_drop_user;	 
 end;
 /
