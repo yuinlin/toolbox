@@ -134,19 +134,6 @@ as
     do_ddl('alter user '||v_user||' account lock');
   end lock_user;
 
-  procedure lock_users
-    (i_tablespace_name in non_null_objectname)
-  is
-  begin
-    for i in (select distinct owner 
-                from dba_segments 
-               where tablespace_name = upper(i_tablespace_name)
-             )
-    loop
-      lock_user(i.owner);
-    end loop;
-  end lock_users;
-
   procedure drop_user
     (i_user in non_null_objectname
      ,i_cascade in boolean default false)
@@ -162,33 +149,21 @@ as
       do_ddl('drop user '||v_user);
     end if;
   end drop_user;
-  
-  procedure drop_locked_empty_users
+
+  procedure lock_and_drop_users
+    (i_tablespace_name in non_null_objectname)
   is
   begin
-    for i in (select username
-                from dba_users u
-                left outer join dba_tablespaces t
-                  on (t.tablespace_name = u.default_tablespace)
-                left outer join dba_segments s
-                  on (s.owner = u.username)
-               where -- user is locked
-                     account_status='LOCKED'
-                     -- user's default tablespace has known prefix and no longer exists
-                 and instr(u.default_tablespace, c_tablespace_prefix) = 1                  
-                 and t.tablespace_name is null
-                     -- user has no segments
-                 and s.owner is null
+    for i in (select distinct owner 
+                from dba_segments 
+               where tablespace_name = upper(i_tablespace_name)
              )
     loop
-      begin
-        drop_user(i.username);
-      exception when oracle_owned_schema then 
-        dbms_output.put_line('cannot drop oracle owned schema '||i.username);
-      end;     
+      lock_user(i.owner);
+      drop_user(i.owner, true);
     end loop;
-  end drop_locked_empty_users;
-  
+  end lock_and_drop_users;
+ 
   procedure create_default_tablespace
     (i_debug_mode in boolean default false)  
   is  
@@ -243,14 +218,15 @@ as
     loop
       begin
         dbms_output.put_line('for tablespace '||i.tablespace_name);
-        lock_users(i.tablespace_name);          
+        lock_and_drop_users(i.tablespace_name);
+        -- take tablespace off and online to clear up any temporary segments in it
+        do_ddl('alter tablespace '||i.tablespace_name||' offline'); 
+        do_ddl('alter tablespace '||i.tablespace_name||' online'); 
         drop_tablespace(i.tablespace_name);
       exception when oracle_owned_schema then 
         dbms_output.put_line('tablespace '||i.tablespace_name||' contains oracle owned schema; cannot be dropped');
       end;
     end loop;
-
-    drop_locked_empty_users;     
   end drop_archived_tablespace;    
   
   procedure force_drop_user
