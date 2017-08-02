@@ -47,7 +47,7 @@ as
   end write_missing;
   
   procedure write_diff
-    (i_type in varchar2, i_name in varchar2, i_msg1 in clob, i_msg2 in clob) 
+    (i_type in varchar2, i_name in varchar2, i_msg1 in clob, i_msg2 in clob, i_msg3 in clob default null) 
   is
   begin
     dbms_output.put_line('-- '||lower(i_type)||' '||i_name||' is different between schemas');        
@@ -65,10 +65,18 @@ as
       dbms_output.put_line('');
       dbms_output.put_line('');
     end if;
+
+    if (i_msg3 is not null)
+    then
+      dbms_output.put(i_msg3);
+      dbms_output.put_line('');
+      dbms_output.put_line('');
+    end if;
     
     if b_save_result
     then
-      insert into admin.diff_result(object_type, name, message, diff) values (i_type, i_name, ' is different between schemas', i_msg1||chr(10)||i_msg2);
+      insert into admin.diff_result(object_type, name, message, diff)
+      values (i_type, i_name, ' is different between schemas', trim(both chr(10) from i_msg1||chr(10)||i_msg2||chr(10)||i_msg3));
     end if;        
   end write_diff;
 
@@ -301,6 +309,30 @@ as
     return diff;
   end chrlength_semantic_check;
 
+  function table_attributes_check
+    (i_schema1 in varchar2, i_schema2 in varchar2, i_table_name in varchar2) 
+  return clob is
+    v_schema1 varchar2(30) := upper(i_schema1); 
+    v_schema2 varchar2(30) := upper(i_schema2); 
+    v_table_name varchar2(30) := upper(i_table_name); 
+    diff clob;
+  begin
+    for i in (select d.table_name, read_only
+                from dba_tables d
+               where d.table_name=v_table_name
+		 and d.owner=v_schema1
+               minus
+              select d.table_name, read_only
+                from dba_tables d
+               where d.table_name=v_table_name
+		 and d.owner=v_schema2
+             )
+    loop
+      diff := diff ||chr(10)||'table '||i.table_name||' has different read/write mode';
+    end loop;
+    return diff;
+  end table_attributes_check;
+  
   procedure allocate_extent
     (i_schema in varchar2, i_table_name in varchar2) 
   is
@@ -336,6 +368,7 @@ as
       allocate_extent(v_schema2,i.name);
       declare
         chrlength_diff clob;
+	attribute_diff clob;
         diffsxml clob;
         alterddl clob;
       begin
@@ -346,12 +379,17 @@ as
         then
           chrlength_diff := chrlength_semantic_check(v_schema1,v_schema2,i.name);
         end if;      
-        
+
+	attribute_diff := table_attributes_check(v_schema1, v_schema2,i.name);
+
         alterddl := to_alterddl(diffsxml,c_type_table);
         
-        if (dbms_lob.getlength(chrlength_diff) > 0 or dbms_lob.getlength(alterddl) > 0)
+        if (dbms_lob.getlength(chrlength_diff) > 0 or
+	    dbms_lob.getlength(alterddl) > 0 or
+	    dbms_lob.getlength(attribute_diff) > 0
+	   )
         then
-          write_diff(c_type_table, i.name, chrlength_diff, alterddl);
+          write_diff(c_type_table, i.name, chrlength_diff, alterddl, attribute_diff);
         end if;
       end;    
     end loop;
