@@ -15,7 +15,6 @@ column previous_sql format a50
 column currid format a13
 column current_sql format a50
 
-
 select s.sid
        ,s.username
        ,s.machine
@@ -23,9 +22,9 @@ select s.sid
        ,r.segment_name rbs
        ,nvl(s.client_info,s.program) operation
        ,prevq.sql_id previd
-       ,listagg(prevq.sql_text) within group (order by prevq.piece) as previous_sql
+       ,rtrim(xmlagg(XMLELEMENT(E,prevq.sql_text,',').extract('//text()') order by prevq.piece).getclobval(),',') as previous_sql
        ,currq.sql_id currid
-       ,listagg(currq.sql_text) within group (order by currq.piece) as current_sql
+       ,rtrim(xmlagg(XMLELEMENT(E,currq.sql_text,',').extract('//text()') order by currq.piece).getclobval(),',') as current_sql
   from v$session s, v$process p, v$transaction t, dba_rollback_segs r, v$sqltext prevq, v$sqltext currq
  where s.paddr = p.addr(+)
    and s.taddr = t.addr(+)
