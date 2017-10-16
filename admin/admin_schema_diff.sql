@@ -105,14 +105,19 @@ as
     for i in (select table_name
                 from dba_tables 
                where owner=v_schema1
-                 and table_name not in ('SCHEMA_UPGRADE_PARAM')
                  and (iot_type is null or iot_type = 'IOT') 
               minus 
               select table_name
                 from dba_tables 
                where owner=v_schema2             
-                 and table_name not in ('SCHEMA_UPGRADE_PARAM')
-                 and (iot_type is null or iot_type = 'IOT') 
+                 and (iot_type is null or iot_type = 'IOT')
+              minus
+                  -- exclude tables
+              select table_name
+                from dba_tables
+               where owner in (v_schema1,v_schema2)
+                 and table_name like 'SCHEMA_UPGRADE%'
+                 and temporary='Y'
              )
     loop
       write_missing(c_type_table, i.table_name, v_schema2);
@@ -132,14 +137,19 @@ as
       from (select table_name
               from dba_tables 
              where owner=v_schema1
-               and table_name not in ('SCHEMA_UPGRADE_PARAM')
                and (iot_type is null or iot_type = 'IOT')
             intersect
             select table_name
               from dba_tables 
              where owner=v_schema2
-               and table_name not in ('SCHEMA_UPGRADE_PARAM')
                and (iot_type is null or iot_type = 'IOT')
+              minus
+                  -- exclude tables
+              select table_name
+                from dba_tables
+               where owner in (v_schema1,v_schema2)
+                 and table_name like 'SCHEMA_UPGRADE%'
+                 and temporary='Y'
            );
   end get_common_tables;
 
