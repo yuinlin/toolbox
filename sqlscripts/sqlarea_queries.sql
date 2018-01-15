@@ -97,4 +97,12 @@ from v$sql s
            ,p.plan_hash_value  
            ,p.child_number
            ,p.depth;           
+
+--
+-- generating bind variable settings from dba_hist_sqlbind
+-- !remove quotes from non char variables!
+--
+select 'var '||replace(name,':','v')||' '||datatype_string||chr(10)||'exec :'||replace(name,':','v')||' :='''||value_string||''''
+from dba_hist_sqlbind where sql_id = 'df9ag3dxgtk6b' and to_char(last_captured,'yyyy-mm-dd hh24:mi')='2017-11-01 14:49'
+order by snap_id, name;
 		   
