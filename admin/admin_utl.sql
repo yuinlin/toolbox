@@ -25,6 +25,10 @@ as
   procedure drop_archived_tablespace
     (i_months_prior in number default 2
      ,i_debug_mode in boolean default false);
+
+  procedure drop_archived_tablespace
+    (i_tablespace_name in varchar2
+     ,i_debug_mode in boolean default false);
      
   procedure force_drop_user
     (i_user_name in varchar2
@@ -196,7 +200,42 @@ as
     set_default_tablespace(v_curr_tablespace);
     set_existing_user_tablespace;
   end create_default_tablespace;
-  
+
+  procedure clean_drop_tablespace
+    (i_tablespace_name in varchar2)
+  is
+    v_tablespace_name dba_tablespaces.tablespace_name%type := upper(i_tablespace_name);
+  begin       
+    dbms_output.put_line('for tablespace '||v_tablespace_name);
+    lock_and_drop_users(v_tablespace_name);
+    -- take tablespace off and online to clear up any temporary segments in it
+    do_ddl('alter tablespace '||v_tablespace_name||' offline'); 
+    do_ddl('alter tablespace '||v_tablespace_name||' online'); 
+    drop_tablespace(v_tablespace_name);
+  exception when oracle_owned_schema then 
+    dbms_output.put_line('tablespace '||v_tablespace_name||' contains oracle owned schema; cannot be dropped');
+  end clean_drop_tablespace;    
+
+  procedure drop_archived_tablespace
+    (i_tablespace_name in varchar2
+     ,i_debug_mode in boolean default false)
+  is
+    v_tablespace_name dba_tablespaces.tablespace_name%type;
+  begin       
+    g_debug_mode := i_debug_mode;  
+      
+    select tablespace_name
+      into v_tablespace_name
+      from dba_tablespaces
+     where tablespace_name = upper(i_tablespace_name)
+       and contents = 'PERMANENT';
+    
+    clean_drop_tablespace(v_tablespace_name);
+
+  exception when no_data_found then
+    dbms_output.put_line('no tablespace named '||upper(i_tablespace_name)||' was found to drop');
+  end drop_archived_tablespace;    
+
   procedure drop_archived_tablespace
     (i_months_prior in number default 2
      ,i_debug_mode in boolean default false)
@@ -219,16 +258,7 @@ as
              )
     loop
       v_found_ts_to_drop := true;
-      begin
-        dbms_output.put_line('for tablespace '||i.tablespace_name);
-        lock_and_drop_users(i.tablespace_name);
-        -- take tablespace off and online to clear up any temporary segments in it
-        do_ddl('alter tablespace '||i.tablespace_name||' offline'); 
-        do_ddl('alter tablespace '||i.tablespace_name||' online'); 
-        drop_tablespace(i.tablespace_name);
-      exception when oracle_owned_schema then 
-        dbms_output.put_line('tablespace '||i.tablespace_name||' contains oracle owned schema; cannot be dropped');
-      end;
+      clean_drop_tablespace(i.tablespace_name);
     end loop;
 
     if not (v_found_ts_to_drop) then
