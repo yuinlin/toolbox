@@ -11,6 +11,8 @@ create or replace package schema_diff
 authid current_user
 as
   b_save_result boolean;
+
+  c_temp_schema constant varchar2(30) := 'TEMPSCHEMA';
   
   c_type_table constant varchar2(30) := 'TABLE';
   c_type_view constant varchar2(30) := 'VIEW';
@@ -160,6 +162,7 @@ as
     h number;
     th number;   
     ddl clob;
+    schema_replaced_ddl clob;
     v_schema varchar2(30) := upper(i_schema); 
     v_object_name varchar2(30) := upper(i_object_name); 
     v_object_type varchar2(30) := upper(i_object_type); 
@@ -171,7 +174,7 @@ as
 
     -- remap schema so result can be be compared
     th := dbms_metadata.add_transform(h,'MODIFY');
-    dbms_metadata.set_remap_param(th,'REMAP_SCHEMA',v_schema,'TEMPSCHEMA');
+    dbms_metadata.set_remap_param(th,'REMAP_SCHEMA',v_schema,c_temp_schema);
 
     -- transform to ddl
     th := dbms_metadata.add_transform(h,'DDL'); 
@@ -179,8 +182,11 @@ as
     -- fetch and close
     ddl := dbms_metadata.fetch_clob(h);
     dbms_metadata.close(h);
+
+    -- manual replace needed for schema name not handled by remap_schema, just as in column default definition
+    schema_replaced_ddl := replace(ddl,v_schema,c_temp_schema);
     
-    return ddl;
+    return schema_replaced_ddl;
   end get_ddl; 
 
   function get_schema_remapped_sxml
@@ -190,6 +196,7 @@ as
     h number;
     th number;   
     sxml clob;
+    schema_replaced_sxml clob;
     v_schema varchar2(30) := upper(i_schema); 
     v_object_name varchar2(30) := upper(i_object_name); 
     v_object_type varchar2(30) := upper(i_object_type); 
@@ -201,7 +208,7 @@ as
 
     -- remap schema so dependent objects like constraints can be compared
     th := dbms_metadata.add_transform(h,'MODIFY');
-    dbms_metadata.set_remap_param(th,'REMAP_SCHEMA',v_schema,'TEMPSCHEMA');
+    dbms_metadata.set_remap_param(th,'REMAP_SCHEMA',v_schema,c_temp_schema);
 
     -- transform to sxml, removing storage and tablespace info
     th := dbms_metadata.add_transform(h,'SXML'); 
@@ -212,7 +219,10 @@ as
     sxml := dbms_metadata.fetch_clob(h);
     dbms_metadata.close(h);
 
-    return sxml;
+    -- manual replace needed for schema name not handled by remap_schema, just as in column default definition
+    schema_replaced_sxml := replace(sxml,v_schema,c_temp_schema);
+    
+    return schema_replaced_sxml;
   end get_schema_remapped_sxml;
   
   function get_diff_sxml
