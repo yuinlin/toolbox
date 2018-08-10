@@ -1,4 +1,20 @@
 -- as admin
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+set termout off
+col session_schema new_value session_schema
+select sys_context('USERENV','SESSION_SCHEMA') as session_schema from dual;
+set termout on
+begin
+if '&session_schema' <> 'ADMIN' then
+    raise_application_error (-20101, 'please run this script as ADMIN!');
+end if;
+end;
+/
+
+
+
+WHENEVER SQLERROR CONTINUE
 
 drop table common_objects;
 create global temporary table common_objects (object_type varchar2(30) not null, name varchar2(30) not null) on commit preserve rows;
