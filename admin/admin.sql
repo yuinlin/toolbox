@@ -10,22 +10,22 @@ define SCHEMANAME=admin
    grant create table to &SCHEMANAME;
    grant create procedure to &SCHEMANAME;
 
-   grant inherit privileges on user sys to admin;     
+   grant inherit privileges on user sys to &SCHEMANAME;     
    
    grant select on gv_$session to &SCHEMANAME;
    grant select on dba_users to &SCHEMANAME;
    grant select on dba_tablespaces to &SCHEMANAME;
    grant select on dba_ts_quotas to &SCHEMANAME;
    grant select on dba_segments to &SCHEMANAME;
-   grant select on dba_tables to admin;
-   grant select on dba_tab_columns to admin;
-   grant select on dba_views to admin;
-   grant select on dba_mviews to admin; 
-   grant select on dba_mview_logs to admin;
-   grant select on dba_indexes to admin;
-   grant select on dba_triggers to admin;
-   grant select on dba_synonyms to admin;
-   grant select on dba_sequences to admin;
-   grant select on dba_procedures to admin; 
+   grant select on dba_tables to &SCHEMANAME;
+   grant select on dba_tab_columns to &SCHEMANAME;
+   grant select on dba_views to &SCHEMANAME;
+   grant select on dba_mviews to &SCHEMANAME; 
+   grant select on dba_mview_logs to &SCHEMANAME;
+   grant select on dba_indexes to &SCHEMANAME;
+   grant select on dba_triggers to &SCHEMANAME;
+   grant select on dba_synonyms to &SCHEMANAME;
+   grant select on dba_sequences to &SCHEMANAME;
+   grant select on dba_procedures to &SCHEMANAME; 
 undef SCHEMANAME
 
