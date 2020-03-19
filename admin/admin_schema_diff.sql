@@ -486,7 +486,9 @@ as
       begin
         diffsxml := get_diff_sxml(v_schema1,v_schema2,i.name,v_object_type);
         
-        if (instr(diffsxml,'src="') != 0 or
+        if -- ignore all objects with schema userid specific aqts_ctx_ context names in their definitions
+           instr(diffsxml,'aqts_ctx_') = 0 and
+           (instr(diffsxml,'src="') != 0 or
             instr(diffsxml,'value1="') != 0)      
         then
           dbms_metadata.set_transform_param(dbms_metadata.session_transform,'STORAGE',false);
@@ -918,12 +920,19 @@ as
       declare
         ddl1 clob;
         ddl2 clob;
-        is_different pls_integer;
+        exclude1 pls_integer;
+        exclude2 pls_integer;
+        is_different pls_integer := 0;
       begin
         ddl1 := get_ddl(v_schema1,i.name,v_object_type);
         ddl2 := get_ddl(v_schema2,i.name,v_object_type);
       
-        is_different := dbms_lob.compare (lob_1  => ddl1,  lob_2  => ddl2);
+        exclude1 := dbms_lob.instr(ddl1, 'aqts_ctx_');
+        exclude2 := dbms_lob.instr(ddl2, 'aqts_ctx_');
+        if (exclude1 = 0 and exclude2 = 0)
+        then
+          is_different := dbms_lob.compare (lob_1  => ddl1,  lob_2  => ddl2);
+        end if;
         
         if (is_different != 0)
         then
